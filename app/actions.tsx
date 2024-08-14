@@ -60,7 +60,7 @@ async function submit(
   const maxMessages = useSpecificAPI ? 5 : useOllamaProvider ? 1 : 10
   messages.splice(0, Math.max(messages.length - maxMessages, 0))
   const userInput = skip
-    ? {"action": "skip"}
+    ? JSON.stringify({"action": "skip"})
     : (formData?.get('input') as string)
 
   const content = skip
@@ -77,16 +77,17 @@ async function submit(
     : 'inquiry'
 
   if (content) {
+    const newMessage: AIMessage = {
+      id: generateId(),
+      role: 'user',
+      content: content,
+      type: type as AIMessage['type']
+    }
     aiState.update({
       ...aiState.get(),
       messages: [
         ...aiState.get().messages,
-        {
-          id: generateId(),
-          role: 'user',
-          content,
-          type
-        }
+        newMessage
       ]
     })
     messages.push({
@@ -97,7 +98,7 @@ async function submit(
 
   // 검색 키워드 검사 로직 추가
   const containsSearchKeyword = messages.some(message =>
-    message.content.includes('검색')
+    typeof message.content === 'string' && message.content.includes('검색')
   );
 
   async function processEvents() {
@@ -160,7 +161,7 @@ async function submit(
       errorOccurred = hasError
 
       if (toolOutputs.length > 0) {
-        toolOutputs.map(output => {
+        toolOutputs.forEach(output => {
           aiState.update({
             ...aiState.get(),
             messages: [
