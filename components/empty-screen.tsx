@@ -3,20 +3,20 @@ import { ArrowRight } from 'lucide-react'
 
 const exampleMessages = [
   {
-    heading: 'What is GPT-4o mini?',
-    message: 'What is GPT-4o mini?'
+    heading: 'GPT-4o mini는 왜 저렴한가요?',
+    message: 'GPT-4o mini는 왜 저렴한가요?'
   },
   {
-    heading: 'Why is Nvidia growing rapidly?',
-    message: 'Why is Nvidia growing rapidly?'
+    heading: '최근 엔비디아가 어떻게 급성장 했나요?',
+    message: '최근 엔비디아가 어떻게 급성장 했나요?'
   },
   {
-    heading: 'How does the Vercel AI SDK work?',
-    message: 'How does the Vercel AI SDK work?'
+    heading: 'Llama3.1이란 무엇인가요?',
+    message: 'Llama3.1이란 무엇인가요? 검색'
   },
   {
-    heading: 'Tesla vs Rivian',
-    message: 'Tesla vs Rivian'
+    heading: 'AWS vs Cloudflare',
+    message: 'AWS vs Cloudflare'
   }
 ]
 export function EmptyScreen({
