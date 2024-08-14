@@ -12,7 +12,7 @@ const exampleMessages = [
   },
   {
     heading: 'Llama3.1이란 무엇인가요?',
-    message: 'Llama3.1이란 무엇인가요? 검색'
+    message: 'Llama3.1이란 무엇인가요?'
   },
   {
     heading: 'AWS vs Cloudflare',
