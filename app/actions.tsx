@@ -97,9 +97,14 @@ async function submit(
   }
 
   // 검색 키워드 검사 로직 추가
-  const containsSearchKeyword = messages.some(message =>
-    typeof message.content === 'string' && message.content.includes('검색')
-  );
+const containsSearchKeyword = messages.some(message =>
+  typeof message.content === 'string' &&
+  (message.content.includes('검색') ||
+   message.content.includes('알아봐') ||
+   message.content.includes('찾아') ||
+   message.content.includes('최근'))
+);
+
 
   async function processEvents() {
     uiStream.append(<Spinner />)
