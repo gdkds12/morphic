@@ -19,6 +19,7 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
       exclude_domains
     }) => {
       let hasError = false
+
       // Append the search section
       const streamResults = createStreamableValue<string>()
       uiStream.update(
@@ -33,6 +34,7 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
         query.length < 5 ? query + ' '.repeat(5 - query.length) : query
       let searchResult
       const searchAPI: 'tavily' | 'exa' = 'tavily'
+
       try {
         searchResult =
           searchAPI === 'tavily'
@@ -50,7 +52,7 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
       }
 
       if (hasError) {
-        fullResponse = `An error occurred while searching for "${query}.`
+        fullResponse = `An error occurred while searching for "${query}".`
         uiStream.update(null)
         streamResults.done()
         return searchResult
@@ -68,9 +70,10 @@ async function tavilySearch(
   searchDepth: 'basic' | 'advanced' = 'basic',
   includeDomains: string[] = [],
   excludeDomains: string[] = []
-): Promise<any> {
+): Promise<SearchResults> {
   const apiKey = process.env.TAVILY_API_KEY
   const includeImageDescriptions = true
+
   const response = await fetch('https://api.tavily.com/search', {
     method: 'POST',
     headers: {
@@ -124,13 +127,24 @@ async function exaSearch(
   maxResults: number = 10,
   includeDomains: string[] = [],
   excludeDomains: string[] = []
-): Promise<any> {
+): Promise<SearchResults> {
   const apiKey = process.env.EXA_API_KEY
   const exa = new Exa(apiKey)
-  return exa.searchAndContents(query, {
+
+  const results = await exa.searchAndContents(query, {
     highlights: true,
     numResults: maxResults,
     includeDomains,
     excludeDomains
   })
+
+  const processedImages = results.images.map(({ url, description }) => ({
+    url: sanitizeUrl(url),
+    description: description || ''
+  }))
+
+  return {
+    ...results,
+    images: processedImages
+  }
 }
