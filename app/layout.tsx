@@ -1,6 +1,6 @@
+// src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
-import { Inter as FontSans } from 'next/font/google'
-import './globals.css'
+import './globals.css' // 새로 생성한 globals.css 파일
 import { cn } from '@/lib/utils'
 import { ThemeProvider } from '@/components/theme-provider'
 import Header from '@/components/header'
@@ -8,11 +8,7 @@ import Footer from '@/components/footer'
 import { Sidebar } from '@/components/sidebar'
 import { Toaster } from '@/components/ui/sonner'
 import { AppStateProvider } from '@/lib/utils/app-state'
-
-const fontSans = FontSans({
-  subsets: ['latin'],
-  variable: '--font-sans'
-})
+import pretendard from '@/src/fonts' // 로컬 폰트 설정 임포트
 
 const title = 'Morphic'
 const description =
@@ -48,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('font-sans antialiased', fontSans.variable)}>
+      <body className={cn('font-pretendard antialiased')}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
