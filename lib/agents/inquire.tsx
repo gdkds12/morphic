@@ -3,7 +3,7 @@ import { createStreamableUI, createStreamableValue } from 'ai/rsc'
 import { CoreMessage, streamObject } from 'ai'
 import { PartialInquiry, inquirySchema } from '@/lib/schema/inquiry'
 import { getModel } from '../utils'
-import { searchTool } from '../path/to/searchTool' // 검색 도구의 경로를 정확히 수정하세요
+import { searchTool } from './searchTool' // 검색 도구의 경로를 정확히 수정하세요
 
 export async function inquire(
   uiStream: ReturnType<typeof createStreamableUI>,
