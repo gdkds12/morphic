@@ -41,9 +41,10 @@ export function FollowupPanel() {
 
   return (
     <form
-      onSubmit={handleSubmit}
-      className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-1 w-full max-w-3xl px-8 sm:px-12 pt-12 md:pt-14 pb-14 md:pb-24"
-    >
+    onSubmit={handleSubmit}
+    className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center w-full max-w-3xl px-8 sm:px-12 pt-12 md:pt-14 pb-14 md:pb-24"
+  >
+    <div className="relative flex items-center w-full">
       <Input
         type="text"
         name="input"
@@ -54,14 +55,16 @@ export function FollowupPanel() {
       />
       <Button
         type="submit"
-        size={'icon'}
+        size="icon"
         disabled={input.length === 0 || isGenerating}
-        variant={'ghost'}
-        className="absolute right-1"
+        variant="ghost"
+        className="absolute right-2 top-1/2 transform -translate-y-1/2"
       >
         <ArrowRight size={20} />
       </Button>
-    </form>
+    </div>
+  </form>
+  
   )
   
   
