@@ -42,7 +42,7 @@ export function FollowupPanel() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="fixed bottom-4 flex items-center space-x-1 w-auto"
+      className="fixed relative bottom-4 flex items-center space-x-1 "
     >
       <Input
         type="text"
