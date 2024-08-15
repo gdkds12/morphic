@@ -41,6 +41,7 @@ export function FollowupPanel() {
 
   return (
     <form
+<<<<<<< HEAD
   onSubmit={handleSubmit}
   className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center w-full max-w-3xl px-8 sm:px-12 pt-12 md:pt-14 pb-14 md:pb-24"
 >
@@ -100,6 +101,29 @@ export function FollowupPanel() {
 </form>
 
 
+=======
+      onSubmit={handleSubmit}
+      className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-1 w-full max-w-3xl px-8 sm:px-12 pt-12 md:pt-14 pb-14 md:pb-24"
+    >
+      <Input
+        type="text"
+        name="input"
+        placeholder="입력해주세요"
+        value={input}
+        className="pr-14 h-12 w-full"
+        onChange={e => setInput(e.target.value)}
+      />
+      <Button
+        type="submit"
+        size={'icon'}
+        disabled={input.length === 0 || isGenerating}
+        variant={'ghost'}
+        className="absolute right-1"
+      >
+        <ArrowRight size={20} />
+      </Button>
+    </form>
+>>>>>>> parent of 3e4d531 (Update followup-panel.tsx)
   )
   
   
