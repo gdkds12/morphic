@@ -41,29 +41,30 @@ export function FollowupPanel() {
 
   return (
     <form
-    onSubmit={handleSubmit}
-    className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center w-full max-w-3xl px-8 sm:px-12 pt-12 md:pt-14 pb-14 md:pb-24"
-  >
-    <div className="relative flex items-center w-full">
-      <Input
-        type="text"
-        name="input"
-        placeholder="입력해주세요"
-        value={input}
-        className="pr-14 h-12 w-full"
-        onChange={e => setInput(e.target.value)}
-      />
-      <Button
-        type="submit"
-        size="icon"
-        disabled={input.length === 0 || isGenerating}
-        variant="ghost"
-        className="absolute right-2 top-1/2 transform -translate-y-1/2"
-      >
-        <ArrowRight size={20} />
-      </Button>
-    </div>
-  </form>
+  onSubmit={handleSubmit}
+  className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center w-full max-w-3xl px-8 sm:px-12 pt-12 md:pt-14 pb-14 md:pb-24"
+>
+  <div className="relative flex items-center w-full">
+    <Input
+      type="text"
+      name="input"
+      placeholder="입력해주세요"
+      value={input}
+      className="pr-14 h-12 w-full rounded-lg bg-gray-200 border border-gray-300 text-gray-800"
+      onChange={e => setInput(e.target.value)}
+    />
+    <Button
+      type="submit"
+      size="icon"
+      disabled={input.length === 0 || isGenerating}
+      variant="ghost"
+      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+    >
+      <ArrowRight size={20} />
+    </Button>
+  </div>
+</form>
+
   
   )
   
