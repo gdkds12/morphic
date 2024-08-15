@@ -10,7 +10,7 @@ const Footer: React.FC = () => {
         <Button
           variant={'ghost'}
           size={'icon'}
-          className="text-muted-foreground/50"
+          className="text-muted-foreground/50 hidden"
         >
           <Link href="https://discord.gg/zRxaseCuGq" target="_blank">
             <SiDiscord size={18} />
@@ -19,7 +19,7 @@ const Footer: React.FC = () => {
         <Button
           variant={'ghost'}
           size={'icon'}
-          className="text-muted-foreground/50"
+          className="text-muted-foreground/50 hidden"
         >
           <Link href="https://twitter.com/morphic_ai" target="_blank">
             <SiTwitter size={18} />
@@ -28,7 +28,7 @@ const Footer: React.FC = () => {
         <Button
           variant={'ghost'}
           size={'icon'}
-          className="text-muted-foreground/50"
+          className="text-muted-foreground/50 hidden"
         >
           <Link href="https://git.new/morphic" target="_blank">
             <SiGithub size={18} />

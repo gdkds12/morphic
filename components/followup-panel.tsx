@@ -42,14 +42,14 @@ export function FollowupPanel() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative flex items-center space-x-1"
+      className="fixed bottom-0 left-0 w-full flex items-center space-x-1 p-4 bg-white"
     >
       <Input
         type="text"
         name="input"
-        placeholder="Ask a follow-up question..."
+        placeholder="입력해주세요"
         value={input}
-        className="pr-14 h-12"
+        className="pr-14 h-12 w-full"
         onChange={e => setInput(e.target.value)}
       />
       <Button
