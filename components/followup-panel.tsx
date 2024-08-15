@@ -49,7 +49,7 @@ export function FollowupPanel() {
         name="input"
         placeholder="입력해주세요"
         value={input}
-        className="pr-14 h-12 w-full"
+        className="pr-14 h-12"
         onChange={e => setInput(e.target.value)}
       />
       <Button
