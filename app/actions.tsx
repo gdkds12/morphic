@@ -96,14 +96,14 @@ async function submit(
     })
   }
 
-  // 검색 키워드 검사 로직 추가
+  {/*// 검색 키워드 검사 로직 추가
 const containsSearchKeyword = messages.some(message =>
   typeof message.content === 'string' &&
   (message.content.includes('검색') ||
    message.content.includes('알아봐') ||
    message.content.includes('찾아') ||
    message.content.includes('최근'))
-);
+);*/}
 
 
   async function processEvents() {
@@ -111,30 +111,27 @@ const containsSearchKeyword = messages.some(message =>
 
     let action = { object: { next: 'proceed' } }
 
-    // 검색 키워드가 포함된 경우에만 taskManager와 inquire를 호출
-    if (containsSearchKeyword) {
-      if (!skip) action = (await taskManager(messages)) ?? action
+    if (!skip) action = (await taskManager(messages)) ?? action
 
-      if (action.object.next === 'inquire') {
-        const inquiry = await inquire(uiStream, messages)
-        uiStream.done()
-        isGenerating.done()
-        isCollapsed.done(false)
-        aiState.done({
-          ...aiState.get(),
-          messages: [
-            ...aiState.get().messages,
-            {
-              id: generateId(),
-              role: 'assistant',
-              content: `inquiry: ${inquiry?.question}`,
-              type: 'inquiry'
-            }
-          ]
-        })
-        return
-      }
-    }
+    if (action.object.next === 'inquire') {
+      // Generate inquiry
+      const inquiry = await inquire(uiStream, messages)
+      uiStream.done()
+      isGenerating.done()
+      isCollapsed.done(false)
+      aiState.done({
+        ...aiState.get(),
+        messages: [
+          ...aiState.get().messages,
+          {
+            id: generateId(),
+            role: 'assistant',
+            content: `inquiry: ${inquiry?.question}`,
+            type: 'inquiry'
+          }
+        ]
+      })
+      return
 
     isCollapsed.done(true)
 
