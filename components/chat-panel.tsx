@@ -88,7 +88,7 @@ export function ChatPanel({ messages, query }: ChatPanelProps) {
   }, [])
 
   // If there are messages and the new button has not been pressed, display the new Button
-  if (messages.length > 0) {
+  {/*if (messages.length > 0) {
     return (
       <div className="fixed bottom-2 md:bottom-8 left-0 right-0 flex justify-center items-center mx-auto pointer-events-none">
         <Button
@@ -105,7 +105,7 @@ export function ChatPanel({ messages, query }: ChatPanelProps) {
         </Button>
       </div>
     )
-  }
+  }*/}
 
   if (query && query.trim().length > 0) {
     return null
