@@ -1,5 +1,5 @@
 .hidden-button {
-    visibility: hidden; /* 요소를 보이지 않게 설정합니다. */
+    /*visibility: hidden;  요소를 보이지 않게 설정합니다. */ 
     position: absolute; /* 위치를 절대값으로 설정합니다. */
     top: 0; /* 상단으로 이동합니다. */
     left: 0; /* 좌측으로 이동합니다. */
