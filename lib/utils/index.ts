@@ -16,7 +16,7 @@ export function getModel(useSubModel = false) {
   const ollamaSubModel = process.env.OLLAMA_SUB_MODEL
   const openaiApiBase = process.env.OPENAI_API_BASE
   const openaiApiKey = process.env.OPENAI_API_KEY
-  let openaiApiModel = process.env.OPENAI_API_MODEL || 'gpt-4o-mini'
+  let openaiApiModel = process.env.OPENAI_API_MODEL || 'gpt-4o'
   const googleApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY
 
