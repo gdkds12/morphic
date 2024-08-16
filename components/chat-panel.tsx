@@ -12,6 +12,7 @@ import { EmptyScreen } from './empty-screen'
 import Textarea from 'react-textarea-autosize'
 import { generateId } from 'ai'
 import { useAppState } from '@/lib/utils/app-state'
+import './styles.css';
 
 interface ChatPanelProps {
   messages: UIState
@@ -108,16 +109,7 @@ if (messages.length > 0) {
   )
 }
 
-// CSS 파일 (styles.css)
-.hidden-button {
-  visibility: hidden; /* 요소를 보이지 않게 설정합니다. */
-  position: absolute; /* 위치를 절대값으로 설정합니다. */
-  top: 0; /* 상단으로 이동합니다. */
-  left: 0; /* 좌측으로 이동합니다. */
-  width: 0; /* 너비를 0으로 설정합니다. */
-  height: 0; /* 높이를 0으로 설정합니다. */
-  overflow: hidden; /* 넘치는 내용을 숨깁니다. */
-}
+
 
   if (query && query.trim().length > 0) {
     return null
