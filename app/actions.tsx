@@ -38,6 +38,7 @@ async function submit(
   const isCollapsed = createStreamableValue(false)
 
   const aiMessages = [...(retryMessages ?? aiState.get().messages)]
+  // Get the messages from the state, filter out the tool messages
   const messages: CoreMessage[] = aiMessages
     .filter(
       message =>
@@ -51,6 +52,7 @@ async function submit(
       return { role, content } as CoreMessage
     })
 
+  // groupId is used to group the messages for collapse
   const groupId = generateId()
 
   const useSpecificAPI = process.env.USE_SPECIFIC_API_FOR_WRITER === 'true'
@@ -58,9 +60,11 @@ async function submit(
     process.env.OLLAMA_MODEL && process.env.OLLAMA_BASE_URL
   )
   const maxMessages = useSpecificAPI ? 5 : useOllamaProvider ? 1 : 10
+  // Limit the number of messages to the maximum
   messages.splice(0, Math.max(messages.length - maxMessages, 0))
+  // Get the user input from the form data
   const userInput = skip
-    ? JSON.stringify({"action": "skip"})
+    ? `{"action": "skip"}`
     : (formData?.get('input') as string)
 
   const content = skip
@@ -76,18 +80,18 @@ async function submit(
     ? 'input_related'
     : 'inquiry'
 
+  // Add the user message to the state
   if (content) {
-    const newMessage: AIMessage = {
-      id: generateId(),
-      role: 'user',
-      content: content,
-      type: type as AIMessage['type']
-    }
     aiState.update({
       ...aiState.get(),
       messages: [
         ...aiState.get().messages,
-        newMessage
+        {
+          id: generateId(),
+          role: 'user',
+          content,
+          type
+        }
       ]
     })
     messages.push({
@@ -96,21 +100,12 @@ async function submit(
     })
   }
 
-  {/*// 검색 키워드 검사 로직 추가
-const containsSearchKeyword = messages.some(message =>
-  typeof message.content === 'string' &&
-  (message.content.includes('검색') ||
-   message.content.includes('알아봐') ||
-   message.content.includes('찾아') ||
-   message.content.includes('최근'))
-);*/}
-
-
   async function processEvents() {
+    // Show the spinner
     uiStream.append(<Spinner />)
 
     let action = { object: { next: 'proceed' } }
-
+    // If the user skips the task, we proceed to the search
     if (!skip) action = (await taskManager(messages)) ?? action
 
     if (action.object.next === 'inquire') {
@@ -132,9 +127,12 @@ const containsSearchKeyword = messages.some(message =>
         ]
       })
       return
+    }
 
+    // Set the collapsed state to true
     isCollapsed.done(true)
 
+    //  Generate the answer
     let answer = ''
     let stopReason = ''
     let toolOutputs: ToolResultPart[] = []
@@ -142,6 +140,8 @@ const containsSearchKeyword = messages.some(message =>
 
     const streamText = createStreamableValue<string>()
 
+    // If ANTHROPIC_API_KEY is set, update the UI with the answer
+    // If not, update the UI with a div
     if (process.env.ANTHROPIC_API_KEY) {
       uiStream.update(
         <AnswerSection result={streamText.value} hasHeader={false} />
@@ -150,11 +150,14 @@ const containsSearchKeyword = messages.some(message =>
       uiStream.update(<div />)
     }
 
+    // If useSpecificAPI is enabled, only function calls will be made
+    // If not using a tool, this model generates the answer
     while (
       useSpecificAPI
         ? toolOutputs.length === 0 && answer.length === 0 && !errorOccurred
         : (stopReason !== 'stop' || answer.length === 0) && !errorOccurred
     ) {
+      // Search the web and generate the answer
       const { fullResponse, hasError, toolResponses, finishReason } =
         await researcher(uiStream, streamText, messages)
       stopReason = finishReason || ''
@@ -163,7 +166,7 @@ const containsSearchKeyword = messages.some(message =>
       errorOccurred = hasError
 
       if (toolOutputs.length > 0) {
-        toolOutputs.forEach(output => {
+        toolOutputs.map(output => {
           aiState.update({
             ...aiState.get(),
             messages: [
@@ -181,7 +184,9 @@ const containsSearchKeyword = messages.some(message =>
       }
     }
 
+    // If useSpecificAPI is enabled, generate the answer using the specific model
     if (useSpecificAPI && answer.length === 0 && !errorOccurred) {
+      // modify the messages to be used by the specific model
       const modifiedMessages = transformToolMessages(messages)
       const latestMessages = modifiedMessages.slice(maxMessages * -1)
       const { response, hasError } = await writer(uiStream, latestMessages)
@@ -199,6 +204,7 @@ const containsSearchKeyword = messages.some(message =>
         process.env.OLLAMA_MODEL && process.env.OLLAMA_BASE_URL
       )
       let processedMessages = messages
+      // If using Google provider, we need to modify the messages
       if (useGoogleProvider) {
         processedMessages = transformToolMessages(messages)
       }
@@ -220,9 +226,11 @@ const containsSearchKeyword = messages.some(message =>
         ]
       })
 
+      // Generate related queries
       const relatedQueries = await querySuggestor(uiStream, processedMessages)
+      // Add follow-up panel
       uiStream.append(
-        <Section title="">
+        <Section title="Follow-up">
           <FollowupPanel />
         </Section>
       )
@@ -268,9 +276,6 @@ const containsSearchKeyword = messages.some(message =>
     isCollapsed: isCollapsed.value
   }
 }
-
-// ... (나머지 코드는 변경 없음)
-
 
 export type AIState = {
   messages: AIMessage[]
@@ -416,7 +421,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
               return {
                 id,
                 component: (
-                  <Section title="" className="pb-1">
+                  <Section title="Follow-up" className="pb-8">
                     <FollowupPanel />
                   </Section>
                 )
