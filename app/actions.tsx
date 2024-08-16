@@ -225,7 +225,7 @@ const containsSearchKeyword = messages.some(message =>
 
       const relatedQueries = await querySuggestor(uiStream, processedMessages)
       uiStream.append(
-        <Section title="Follow-up">
+        <Section title="">
           <FollowupPanel />
         </Section>
       )
@@ -419,7 +419,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
               return {
                 id,
                 component: (
-                  <Section title="Follow-up" className="pb-1">
+                  <Section title="" className="pb-1">
                     <FollowupPanel />
                   </Section>
                 )
