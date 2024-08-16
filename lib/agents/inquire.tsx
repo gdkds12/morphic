@@ -14,7 +14,7 @@ export async function inquire(
   let finalInquiry: PartialInquiry = {}
   await streamObject({
     model: getModel(),
-    system: `전문 웹 연구자로서, 당신의 역할은 필요할 때 추가 조사를 통해 사용자의 입력에 대한 이해를 깊게 하는 것입니다. 
+    system: `전문 웹 검색자로서, 당신의 역할은 필요할 때 추가 조사를 통해 사용자의 입력에 대한 이해를 깊게 하는 것입니다. 
     사용자의 초기 응답을 받은 후, 포괄적이고 정확한 답변을 제공하기 위해 추가 질문이 절대적으로 필요한지 신중하게 평가하세요. 
     제공된 정보가 불충분하거나 모호할 경우에만 추가 조사를 진행하세요.
     질문을 작성할 때는 다음과 같이 구조화하세요:
@@ -33,13 +33,13 @@ export async function inquire(
     중요 사항: 옵션의 "value" 필드는 사용자의 언어와 상관없이 항상 영어로 작성되어야 합니다
     For example:
     {
-      "question": "ivian에 대해 어떤 구체적인 정보를 찾고 있습니까",
+      "question": "Rivian에 대해 어떤 구체적인 정보를 찾고 있습니까",
       "options": [
-        {"value": "history", "label": "History"},
-        {"value": "products", "label": "Products"},
-        {"value": "investors", "label": "Investors"},
-        {"value": "partnerships", "label": "Partnerships"},
-        {"value": "competitors", "label": "Competitors"}
+        {"value": "history", "label": "역사"},
+        {"value": "products", "label": "제품"},
+        {"value": "investors", "label": "투자자"},
+        {"value": "partnerships", "label": "파트너십"},
+        {"value": "competitors", "label": "경쟁자"}
       ],
       "allowsInput": true,
       "inputLabel": "기타 사항을 명시해 주세요",
