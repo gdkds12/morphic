@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 const { fontFamily } = require("tailwindcss/defaultTheme");
 
-const config = {
+const config: Config = {
   darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
@@ -76,9 +76,18 @@ const config = {
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
       },
+      fontSize: {
+        // 기존 폰트 사이즈를 3px 증가시키는 설정
+        base: ['calc(1rem + 3px)', '1.5'], // 예: 1rem을 3px 증가시킴
+        sm: ['calc(0.875rem + 3px)', '1.25'], // sm 폰트 사이즈 조정
+        lg: ['calc(1.125rem + 3px)', '1.75'], // lg 폰트 사이즈 조정
+        xl: ['calc(1.25rem + 3px)', '1.75'], // xl 폰트 사이즈 조정
+        '2xl': ['calc(1.5rem + 3px)', '2'], // 2xl 폰트 사이즈 조정
+        // 필요에 따라 추가적인 폰트 사이즈 조정
+      },
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
-} satisfies Config;
+}
 
 export default config;
