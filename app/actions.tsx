@@ -81,7 +81,7 @@ async function submit(
     : 'inquiry'
 
   // Check if the initial user input contains the word "검색"
-  const isSearchQuery = content && content.includes('검색')
+  const isSearchQuery = content && content.includes(' ')
 
   // Add the user message to the state
   if (content) {
