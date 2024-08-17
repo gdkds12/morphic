@@ -80,6 +80,9 @@ async function submit(
     ? 'input_related'
     : 'inquiry'
 
+  // Check if the initial user input contains the word "검색"
+  const isSearchQuery = content && content.includes('검색')
+
   // Add the user message to the state
   if (content) {
     aiState.update({
@@ -113,163 +116,196 @@ async function submit(
     // If the user skips the task, we proceed to the search
     if (!skip) action = (await taskManager(messages)) ?? action
 
-    if (action.object.next === 'inquire') {
-      // Generate inquiry
-      const inquiry = await inquire(uiStream, messages)
-      uiStream.done()
-      isGenerating.done()
-      isCollapsed.done(false)
-      aiState.done({
-        ...aiState.get(),
-        messages: [
-          ...aiState.get().messages,
-          {
-            id: generateId(),
-            role: 'assistant',
-            content: `inquiry: ${inquiry?.question}`,
-            type: 'inquiry'
-          }
-        ]
-      })
-      return
-    }
+    if (isSearchQuery) {
+      // Continue with existing logic for search-related tasks
+      if (action.object.next === 'inquire') {
+        // Generate inquiry
+        const inquiry = await inquire(uiStream, messages)
+        uiStream.done()
+        isGenerating.done()
+        isCollapsed.done(false)
+        aiState.done({
+          ...aiState.get(),
+          messages: [
+            ...aiState.get().messages,
+            {
+              id: generateId(),
+              role: 'assistant',
+              content: `inquiry: ${inquiry?.question}`,
+              type: 'inquiry'
+            }
+          ]
+        })
+        return
+      }
 
-    // Set the collapsed state to true
-    isCollapsed.done(true)
+      // Set the collapsed state to true
+      isCollapsed.done(true)
 
-    //  Generate the answer
-    let answer = ''
-    let stopReason = ''
-    let toolOutputs: ToolResultPart[] = []
-    let errorOccurred = false
+      //  Generate the answer
+      let answer = ''
+      let stopReason = ''
+      let toolOutputs: ToolResultPart[] = []
+      let errorOccurred = false
 
-    const streamText = createStreamableValue<string>()
+      const streamText = createStreamableValue<string>()
 
-    // If ANTHROPIC_API_KEY is set, update the UI with the answer
-    // If not, update the UI with a div
-    if (process.env.ANTHROPIC_API_KEY) {
-      uiStream.update(
-        <AnswerSection result={streamText.value} hasHeader={false} />
-      )
-    } else {
-      uiStream.update(<div />)
-    }
+      // If ANTHROPIC_API_KEY is set, update the UI with the answer
+      // If not, update the UI with a div
+      if (process.env.ANTHROPIC_API_KEY) {
+        uiStream.update(
+          <AnswerSection result={streamText.value} hasHeader={false} />
+        )
+      } else {
+        uiStream.update(<div />)
+      }
 
-    // If useSpecificAPI is enabled, only function calls will be made
-    // If not using a tool, this model generates the answer
-    while (
-      useSpecificAPI
-        ? toolOutputs.length === 0 && answer.length === 0 && !errorOccurred
-        : (stopReason !== 'stop' || answer.length === 0) && !errorOccurred
-    ) {
-      // Search the web and generate the answer
-      const { fullResponse, hasError, toolResponses, finishReason } =
-        await researcher(uiStream, streamText, messages)
-      stopReason = finishReason || ''
-      answer = fullResponse
-      toolOutputs = toolResponses
-      errorOccurred = hasError
+      // If useSpecificAPI is enabled, only function calls will be made
+      // If not using a tool, this model generates the answer
+      while (
+        useSpecificAPI
+          ? toolOutputs.length === 0 && answer.length === 0 && !errorOccurred
+          : (stopReason !== 'stop' || answer.length === 0) && !errorOccurred
+      ) {
+        // Search the web and generate the answer
+        const { fullResponse, hasError, toolResponses, finishReason } =
+          await researcher(uiStream, streamText, messages)
+        stopReason = finishReason || ''
+        answer = fullResponse
+        toolOutputs = toolResponses
+        errorOccurred = hasError
 
-      if (toolOutputs.length > 0) {
-        toolOutputs.map(output => {
-          aiState.update({
-            ...aiState.get(),
-            messages: [
-              ...aiState.get().messages,
-              {
-                id: groupId,
-                role: 'tool',
-                content: JSON.stringify(output.result),
-                name: output.toolName,
-                type: 'tool'
-              }
-            ]
+        if (toolOutputs.length > 0) {
+          toolOutputs.map(output => {
+            aiState.update({
+              ...aiState.get(),
+              messages: [
+                ...aiState.get().messages,
+                {
+                  id: groupId,
+                  role: 'tool',
+                  content: JSON.stringify(output.result),
+                  name: output.toolName,
+                  type: 'tool'
+                }
+              ]
+            })
           })
+        }
+      }
+
+      // If useSpecificAPI is enabled, generate the answer using the specific model
+      if (useSpecificAPI && answer.length === 0 && !errorOccurred) {
+        // modify the messages to be used by the specific model
+        const modifiedMessages = transformToolMessages(messages)
+        const latestMessages = modifiedMessages.slice(maxMessages * -1)
+        const { response, hasError } = await writer(uiStream, latestMessages)
+        answer = response
+        errorOccurred = hasError
+        messages.push({
+          role: 'assistant',
+          content: answer
         })
       }
-    }
 
-    // If useSpecificAPI is enabled, generate the answer using the specific model
-    if (useSpecificAPI && answer.length === 0 && !errorOccurred) {
-      // modify the messages to be used by the specific model
-      const modifiedMessages = transformToolMessages(messages)
-      const latestMessages = modifiedMessages.slice(maxMessages * -1)
-      const { response, hasError } = await writer(uiStream, latestMessages)
-      answer = response
-      errorOccurred = hasError
-      messages.push({
-        role: 'assistant',
-        content: answer
-      })
-    }
+      if (!errorOccurred) {
+        const useGoogleProvider = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+        const useOllamaProvider = !!(
+          process.env.OLLAMA_MODEL && process.env.OLLAMA_BASE_URL
+        )
+        let processedMessages = messages
+        // If using Google provider, we need to modify the messages
+        if (useGoogleProvider) {
+          processedMessages = transformToolMessages(messages)
+        }
+        if (useOllamaProvider) {
+          processedMessages = [{ role: 'assistant', content: answer }]
+        }
 
-    if (!errorOccurred) {
-      const useGoogleProvider = process.env.GOOGLE_GENERATIVE_AI_API_KEY
-      const useOllamaProvider = !!(
-        process.env.OLLAMA_MODEL && process.env.OLLAMA_BASE_URL
-      )
-      let processedMessages = messages
-      // If using Google provider, we need to modify the messages
-      if (useGoogleProvider) {
-        processedMessages = transformToolMessages(messages)
+        streamText.done()
+        aiState.update({
+          ...aiState.get(),
+          messages: [
+            ...aiState.get().messages,
+            {
+              id: groupId,
+              role: 'assistant',
+              content: answer,
+              type: 'answer'
+            }
+          ]
+        })
+
+        // Generate related queries
+        const relatedQueries = await querySuggestor(uiStream, processedMessages)
+        // Add follow-up panel
+        uiStream.append(
+          <Section title="Follow-up">
+            <FollowupPanel />
+          </Section>
+        )
+
+        aiState.done({
+          ...aiState.get(),
+          messages: [
+            ...aiState.get().messages,
+            {
+              id: groupId,
+              role: 'assistant',
+              content: JSON.stringify(relatedQueries),
+              type: 'related'
+            },
+            {
+              id: groupId,
+              role: 'assistant',
+              content: 'followup',
+              type: 'followup'
+            }
+          ]
+        })
+      } else {
+        aiState.done(aiState.get())
+        streamText.done()
+        uiStream.append(
+          <ErrorCard
+            errorMessage={answer || 'An error occurred. Please try again.'}
+          />
+        )
       }
-      if (useOllamaProvider) {
-        processedMessages = [{ role: 'assistant', content: answer }]
-      }
 
-      streamText.done()
-      aiState.update({
-        ...aiState.get(),
-        messages: [
-          ...aiState.get().messages,
-          {
-            id: groupId,
-            role: 'assistant',
-            content: answer,
-            type: 'answer'
-          }
-        ]
-      })
-
-      // Generate related queries
-      const relatedQueries = await querySuggestor(uiStream, processedMessages)
-      // Add follow-up panel
-      uiStream.append(
-        <Section title="Follow-up">
-          <FollowupPanel />
-        </Section>
-      )
-
-      aiState.done({
-        ...aiState.get(),
-        messages: [
-          ...aiState.get().messages,
-          {
-            id: groupId,
-            role: 'assistant',
-            content: JSON.stringify(relatedQueries),
-            type: 'related'
-          },
-          {
-            id: groupId,
-            role: 'assistant',
-            content: 'followup',
-            type: 'followup'
-          }
-        ]
-      })
+      isGenerating.done(false)
+      uiStream.done()
     } else {
-      aiState.done(aiState.get())
-      streamText.done()
-      uiStream.append(
-        <ErrorCard
-          errorMessage={answer || 'An error occurred. Please try again.'}
-        />
-      )
-    }
+      // Directly send the message to writer if "검색" is not in the input
+      const { response, hasError } = await writer(uiStream, messages)
+      const answer = response
+      const errorOccurred = hasError
 
-    isGenerating.done(false)
-    uiStream.done()
+      if (!errorOccurred) {
+        aiState.update({
+          ...aiState.get(),
+          messages: [
+            ...aiState.get().messages,
+            {
+              id: groupId,
+              role: 'assistant',
+              content: answer,
+              type: 'answer'
+            }
+          ]
+        })
+      } else {
+        aiState.done(aiState.get())
+        uiStream.append(
+          <ErrorCard
+            errorMessage={answer || 'An error occurred. Please try again.'}
+          />
+        )
+      }
+
+      isGenerating.done(false)
+      uiStream.done()
+    }
   }
 
   processEvents()
