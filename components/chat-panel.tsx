@@ -89,27 +89,25 @@ export function ChatPanel({ messages, query }: ChatPanelProps) {
     inputRef.current?.focus()
   }, [])
 
-// If there are messages and the new button has not been pressed, display the new Button
-if (messages.length > 0) {
-  return (
-    <div className="fixed top-2 md:top-8 left-0 right-0 flex justify-center items-center mx-auto pointer-events-none">
-      <Button
-        type="button"
-        variant={'secondary'}
-        className="rounded-full bg-secondary/80 group transition-all hover:scale-105 pointer-events-auto hidden-button"
-        onClick={() => handleClear()}
-        disabled={isGenerating}
-      >
-        <span className="text-sm mr-2 group-hover:block hidden animate-in fade-in duration-300">
-          New
-        </span>
-        <Plus size={18} className="group-hover:rotate-90 transition-all" />
-      </Button>
-    </div>
-  )
-}
-
-
+  // If there are messages and the new button has not been pressed, display the new Button
+  if (messages.length > 0) {
+    return (
+      <div className="fixed bottom-2 md:bottom-8 left-0 right-0 flex justify-center items-center mx-auto pointer-events-none">
+        <Button
+          type="button"
+          variant={'secondary'}
+          className="rounded-full bg-secondary/80 group transition-all hover:scale-105 pointer-events-auto hidden"
+          onClick={() => handleClear()}
+          disabled={isGenerating}
+        >
+          <span className="text-sm mr-2 group-hover:block hidden animate-in fade-in duration-300">
+            New
+          </span>
+          <Plus size={18} className="group-hover:rotate-90 transition-all" />
+        </Button>
+      </div>
+    )
+  }
 
   if (query && query.trim().length > 0) {
     return null
