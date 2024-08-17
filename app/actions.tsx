@@ -81,7 +81,7 @@ async function submit(
     : 'inquiry'
 
   // Check if the initial user input contains the word "검색"
-  const isSearchQuery = content && content.includes(' ')
+  const isSearchQuery = content && content.includes('')
 
   // Add the user message to the state
   if (content) {
@@ -105,7 +105,7 @@ async function submit(
 
   // 검색 키워드 검사 로직 추가
   const containsSearchKeyword = messages.some(message =>
-    typeof message.content === 'string' && message.content.includes('검색')
+    typeof message.content === 'string' && message.content.includes('')
   );
 
   async function processEvents() {
