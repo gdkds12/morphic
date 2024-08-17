@@ -100,6 +100,11 @@ async function submit(
     })
   }
 
+  // 검색 키워드 검사 로직 추가
+  const containsSearchKeyword = messages.some(message =>
+    typeof message.content === 'string' && message.content.includes('검색')
+  );
+
   async function processEvents() {
     // Show the spinner
     uiStream.append(<Spinner />)
