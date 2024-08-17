@@ -118,7 +118,7 @@ if (messages.length > 0) {
   return (
     <div
       className={
-        'fixed bottom-8 left-0 right-0 top-10 mx-auto h-screen flex flex-col items-center justify-center'
+        'fixed bottom-0 left-0 right-0 top-10 mx-auto h-screen flex flex-col items-center justify-center'
       }
     >
       <form onSubmit={handleSubmit} className="max-w-2xl w-full px-6">
