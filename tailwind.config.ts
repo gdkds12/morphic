@@ -78,7 +78,7 @@ const config: Config = {
       },
       fontSize: {
         // 기존 폰트 사이즈를 3px 증가시키는 설정
-        base: ['calc(1rem + 10px)', '1.5'], // 예: 1rem을 3px 증가시킴
+        base: ['calc(1rem + 0px)', '1.5'], // 예: 1rem을 3px 증가시킴
         sm: ['calc(0.875rem + 0px)', '1.25'], // sm 폰트 사이즈 조정
         lg: ['calc(1.125rem + 0px)', '1.75'], // lg 폰트 사이즈 조정
         xl: ['calc(1.25rem + 0px)', '1.75'], // xl 폰트 사이즈 조정
