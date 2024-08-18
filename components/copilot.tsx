@@ -101,7 +101,7 @@ export const Copilot: React.FC<CopilotProps> = ({ inquiry }: CopilotProps) => {
       <Card className="p-4 w-full flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Sparkles className="w-4 h-4" />
-          <h5 className="text-muted-foreground text-lg truncate">
+          <h5 className="text-muted-foreground text-xs truncate">
             {`error: ${error}`}
           </h5>
         </div>
@@ -117,7 +117,7 @@ export const Copilot: React.FC<CopilotProps> = ({ inquiry }: CopilotProps) => {
     return (
       <Card className="p-3 md:p-4 w-full flex justify-between items-center">
         <div className="flex items-center space-x-2 flex-1 min-w-0">
-          <h5 className="text-muted-foreground text-lg truncate">
+          <h5 className="text-muted-foreground text-xs truncate">
             {updatedQuery()}
           </h5>
         </div>
