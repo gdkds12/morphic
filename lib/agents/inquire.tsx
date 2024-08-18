@@ -49,7 +49,7 @@ export async function inquire(
 
     By providing predefined options, you guide the user towards the most relevant aspects of their query, while the free-form input allows them to provide additional context or specific details not covered by the options.
     Remember, your goal is to gather the necessary information to deliver a thorough and accurate response.
-    Please match the language of the response (question, labels, inputLabel, and inputPlaceholder) to the korean, but keep the "value" field in English. 
+    Please match the language of the response (question, labels, inputLabel, and inputPlaceholder) to the user's language, but keep the "value" field in English.
     `,
     messages,
     schema: inquirySchema
