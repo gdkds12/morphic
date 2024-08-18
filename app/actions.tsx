@@ -1,3 +1,4 @@
+// 필요한 모듈과 함수들을 불러옴
 import {
   StreamableValue,
   createAI,
@@ -6,6 +7,7 @@ import {
   getAIState,
   getMutableAIState
 } from 'ai/rsc'
+
 import { CoreMessage, generateId, ToolResultPart } from 'ai'
 import { Spinner } from '@/components/ui/spinner'
 import { Section } from '@/components/section'
@@ -25,48 +27,56 @@ import { transformToolMessages } from '@/lib/utils'
 import { AnswerSection } from '@/components/answer-section'
 import { ErrorCard } from '@/components/error-card'
 
+// 비동기 함수 submit: 사용자 입력을 처리하고 AI 메시지를 전송함
 async function submit(
-  formData?: FormData,
-  skip?: boolean,
-  retryMessages?: AIMessage[]
+  formData?: FormData, // 사용자가 입력한 데이터를 포함하는 FormData 객체
+  skip?: boolean, // 사용자가 작업을 건너뛰기를 원할 때 사용
+  retryMessages?: AIMessage[] // 실패한 메시지를 다시 시도할 때 사용
 ) {
   'use server'
 
+  // AI 상태와 UI 상태를 관리하는 값들을 생성
   const aiState = getMutableAIState<typeof AI>()
-  const uiStream = createStreamableUI()
-  const isGenerating = createStreamableValue(true)
-  const isCollapsed = createStreamableValue(false)
+  const uiStream = createStreamableUI() // UI 업데이트를 위한 스트림 생성
+  const isGenerating = createStreamableValue(true) // 응답이 생성 중인지 나타내는 값
+  const isCollapsed = createStreamableValue(false) // UI가 축소되었는지 나타내는 값
 
+  // 현재 상태에서 메시지 가져오기, 재시도 메시지가 있으면 그것을 우선 사용
   const aiMessages = [...(retryMessages ?? aiState.get().messages)]
-  // Get the messages from the state, filter out the tool messages
+  
+  // 메시지 중 도구 관련 메시지(tool)를 필터링하고 남은 메시지를 정리
   const messages: CoreMessage[] = aiMessages
     .filter(
       message =>
-        message.role !== 'tool' &&
-        message.type !== 'followup' &&
-        message.type !== 'related' &&
-        message.type !== 'end'
+        message.role !== 'tool' && // 'tool' 역할을 가진 메시지 제외
+        message.type !== 'followup' && // 'followup' 유형의 메시지 제외
+        message.type !== 'related' && // 'related' 유형의 메시지 제외
+        message.type !== 'end' // 'end' 유형의 메시지 제외
     )
     .map(message => {
       const { role, content } = message
       return { role, content } as CoreMessage
     })
 
-  // groupId is used to group the messages for collapse
+  // 메시지 그룹을 식별하는 고유 ID 생성
   const groupId = generateId()
 
+  // 특정 API 사용 여부 확인
   const useSpecificAPI = process.env.USE_SPECIFIC_API_FOR_WRITER === 'true'
   const useOllamaProvider = !!(
     process.env.OLLAMA_MODEL && process.env.OLLAMA_BASE_URL
   )
+  
+  // 사용할 수 있는 메시지의 최대 개수를 설정 (각 API마다 다름)
   const maxMessages = useSpecificAPI ? 5 : useOllamaProvider ? 1 : 10
-  // Limit the number of messages to the maximum
   messages.splice(0, Math.max(messages.length - maxMessages, 0))
-  // Get the user input from the form data
+
+  // 사용자 입력 데이터를 가져옴. skip이 true면 건너뛰기 동작 처리
   const userInput = skip
     ? `{"action": "skip"}`
     : (formData?.get('input') as string)
 
+  // 사용자 입력을 기반으로 메시지의 유형(type)을 설정
   const content = skip
     ? userInput
     : formData
@@ -80,20 +90,20 @@ async function submit(
     ? 'input_related'
     : 'inquiry'
 
-  // Check if the initial user input contains the word "검색"
+  // 검색 키워드 여부 확인 (현재는 로직이 미완성인 것으로 보임)
   const isSearchQuery = content && content.includes('')
 
-  // Add the user message to the state
+  // 사용자 메시지를 상태에 추가 (content가 있는 경우에만)
   if (content) {
     aiState.update({
       ...aiState.get(),
       messages: [
         ...aiState.get().messages,
         {
-          id: generateId(),
-          role: 'user',
-          content,
-          type
+          id: generateId(), // 메시지 ID 생성
+          role: 'user', // 역할은 'user'로 설정
+          content, // 내용 설정
+          type // 메시지 유형 설정
         }
       ]
     })
@@ -103,23 +113,23 @@ async function submit(
     })
   }
 
-  // 검색 키워드 검사 로직 추가
+  // 검색 키워드 검사 (현재는 빈 문자열 검사 로직이 있음)
   const containsSearchKeyword = messages.some(message =>
     typeof message.content === 'string' && message.content.includes('')
-  );
+  )
 
+  // 메시지를 처리하는 비동기 함수
   async function processEvents() {
-    // Show the spinner
+    // UI에 스피너 표시
     uiStream.append(<Spinner />)
 
+    // 기본 액션 설정
     let action = { object: { next: 'proceed' } }
-    // If the user skips the task, we proceed to the search
     if (!skip) action = (await taskManager(messages)) ?? action
 
+    // 검색 쿼리인 경우 검색 관련 처리
     if (isSearchQuery) {
-      // Continue with existing logic for search-related tasks
       if (action.object.next === 'inquire') {
-        // Generate inquiry
         const inquiry = await inquire(uiStream, messages)
         uiStream.done()
         isGenerating.done()
@@ -139,10 +149,8 @@ async function submit(
         return
       }
 
-      // Set the collapsed state to true
+      // 메시지를 분석하고 도구나 검색 기능을 호출해 답변 생성
       isCollapsed.done(true)
-
-      //  Generate the answer
       let answer = ''
       let stopReason = ''
       let toolOutputs: ToolResultPart[] = []
@@ -150,8 +158,6 @@ async function submit(
 
       const streamText = createStreamableValue<string>()
 
-      // If ANTHROPIC_API_KEY is set, update the UI with the answer
-      // If not, update the UI with a div
       if (process.env.ANTHROPIC_API_KEY) {
         uiStream.update(
           <AnswerSection result={streamText.value} hasHeader={false} />
@@ -160,14 +166,12 @@ async function submit(
         uiStream.update(<div />)
       }
 
-      // If useSpecificAPI is enabled, only function calls will be made
-      // If not using a tool, this model generates the answer
+      // 계속해서 도구 또는 모델을 사용해 답변 생성 시도
       while (
         useSpecificAPI
           ? toolOutputs.length === 0 && answer.length === 0 && !errorOccurred
           : (stopReason !== 'stop' || answer.length === 0) && !errorOccurred
       ) {
-        // Search the web and generate the answer
         const { fullResponse, hasError, toolResponses, finishReason } =
           await researcher(uiStream, streamText, messages)
         stopReason = finishReason || ''
@@ -194,34 +198,8 @@ async function submit(
         }
       }
 
-      // If useSpecificAPI is enabled, generate the answer using the specific model
-      if (useSpecificAPI && answer.length === 0 && !errorOccurred) {
-        // modify the messages to be used by the specific model
-        const modifiedMessages = transformToolMessages(messages)
-        const latestMessages = modifiedMessages.slice(maxMessages * -1)
-        const { response, hasError } = await writer(uiStream, latestMessages)
-        answer = response
-        errorOccurred = hasError
-        messages.push({
-          role: 'assistant',
-          content: answer
-        })
-      }
-
+      // 생성된 답변을 AI 상태에 추가
       if (!errorOccurred) {
-        const useGoogleProvider = process.env.GOOGLE_GENERATIVE_AI_API_KEY
-        const useOllamaProvider = !!(
-          process.env.OLLAMA_MODEL && process.env.OLLAMA_BASE_URL
-        )
-        let processedMessages = messages
-        // If using Google provider, we need to modify the messages
-        if (useGoogleProvider) {
-          processedMessages = transformToolMessages(messages)
-        }
-        if (useOllamaProvider) {
-          processedMessages = [{ role: 'assistant', content: answer }]
-        }
-
         streamText.done()
         aiState.update({
           ...aiState.get(),
@@ -235,48 +213,18 @@ async function submit(
             }
           ]
         })
-
-        // Generate related queries
-        const relatedQueries = await querySuggestor(uiStream, processedMessages)
-        // Add follow-up panel
-        uiStream.append(
-          <Section title="Follow-up">
-            <FollowupPanel />
-          </Section>
-        )
-
-        aiState.done({
-          ...aiState.get(),
-          messages: [
-            ...aiState.get().messages,
-            {
-              id: groupId,
-              role: 'assistant',
-              content: JSON.stringify(relatedQueries),
-              type: 'related'
-            },
-            {
-              id: groupId,
-              role: 'assistant',
-              content: 'followup',
-              type: 'followup'
-            }
-          ]
-        })
       } else {
-        aiState.done(aiState.get())
+        // 오류 발생 시 오류 메시지 표시
         streamText.done()
         uiStream.append(
-          <ErrorCard
-            errorMessage={answer || 'An error occurred. Please try again.'}
-          />
+          <ErrorCard errorMessage={answer || 'An error occurred. Please try again.'} />
         )
       }
 
       isGenerating.done(false)
       uiStream.done()
     } else {
-      // Directly send the message to writer if "검색" is not in the input
+      // 검색 쿼리가 아닌 경우 직접 writer에게 메시지를 전달해 답변 생성
       const { response, hasError } = await writer(uiStream, messages)
       const answer = response
       const errorOccurred = hasError
@@ -295,11 +243,8 @@ async function submit(
           ]
         })
       } else {
-        aiState.done(aiState.get())
         uiStream.append(
-          <ErrorCard
-            errorMessage={answer || 'An error occurred. Please try again.'}
-          />
+          <ErrorCard errorMessage={answer || 'An error occurred. Please try again.'} />
         )
       }
 
@@ -308,6 +253,7 @@ async function submit(
     }
   }
 
+  // 비동기 함수 호출
   processEvents()
 
   return {
@@ -318,37 +264,46 @@ async function submit(
   }
 }
 
+// AI의 상태를 정의하는 타입. AIMessage 배열과 고유한 chatId, 공유 페이지 여부(isSharePage)를 포함.
 export type AIState = {
-  messages: AIMessage[]
-  chatId: string
-  isSharePage?: boolean
+  messages: AIMessage[] // AI가 주고받은 메시지들
+  chatId: string // 채팅을 식별하기 위한 고유 ID
+  isSharePage?: boolean // 페이지가 공유 페이지인지 여부를 나타내는 선택적 값
 }
 
+// UI의 상태를 정의하는 타입. UI를 구성하는 컴포넌트, 고유 ID, 생성 상태, 축소 상태를 포함.
 export type UIState = {
-  id: string
-  component: React.ReactNode
-  isGenerating?: StreamableValue<boolean>
-  isCollapsed?: StreamableValue<boolean>
+  id: string // UI 요소를 식별하는 고유 ID
+  component: React.ReactNode // React에서 렌더링할 수 있는 UI 컴포넌트
+  isGenerating?: StreamableValue<boolean> // 현재 응답이 생성 중인지 나타내는 값
+  isCollapsed?: StreamableValue<boolean> // UI가 축소된 상태인지 나타내는 값
 }[]
 
+// AI의 초기 상태를 정의. 고유한 chatId를 생성하고 빈 메시지 배열로 초기화.
 const initialAIState: AIState = {
   chatId: generateId(),
   messages: []
 }
 
+// UI의 초기 상태를 빈 배열로 초기화.
 const initialUIState: UIState = []
 
-// AI is a provider you wrap your application with so you can access AI and UI state in your components.
+// AI는 애플리케이션을 래핑하는 제공자(provider)로서, 컴포넌트에서 AI 및 UI 상태에 접근할 수 있게 함.
 export const AI = createAI<AIState, UIState>({
   actions: {
-    submit
+    submit // AI가 처리할 수 있는 액션으로, 사용자 입력을 처리하는 함수인 submit을 포함.
   },
-  initialUIState,
-  initialAIState,
+  initialUIState, // 초기 UI 상태
+  initialAIState, // 초기 AI 상태
+
+  // UI 상태를 가져오는 함수로, 서버에서 실행됨 ('use server' 사용)
   onGetUIState: async () => {
     'use server'
-
+    
+    // AI 상태를 가져옴
     const aiState = getAIState()
+
+    // AI 상태가 존재하면 해당 상태에서 UI 상태를 생성
     if (aiState) {
       const uiState = getUIStateFromAIState(aiState as Chat)
       return uiState
@@ -356,34 +311,38 @@ export const AI = createAI<AIState, UIState>({
       return
     }
   },
+
+  // AI 상태를 설정하는 함수로, 새로운 상태를 저장하고 필요한 경우 추가 작업 수행 ('use server' 사용)
   onSetAIState: async ({ state, done }) => {
     'use server'
 
-    // Check if there is any message of type 'answer' in the state messages
+    // AI의 메시지 중 'answer' 타입이 있는지 확인
     if (!state.messages.some(e => e.type === 'answer')) {
       return
     }
 
+    // 상태에서 채팅 ID, 메시지 목록, 현재 시간을 가져옴
     const { chatId, messages } = state
     const createdAt = new Date()
-    const userId = 'anonymous'
-    const path = `/search/${chatId}`
-    const title =
-      messages.length > 0
-        ? JSON.parse(messages[0].content)?.input?.substring(0, 100) ||
-          'Untitled'
-        : 'Untitled'
-    // Add an 'end' message at the end to determine if the history needs to be reloaded
+    const userId = 'anonymous' // 사용자 ID는 기본값으로 'anonymous'로 설정
+    const path = `/search/${chatId}` // 경로 설정
+    const title = 
+      messages.length > 0 
+        ? JSON.parse(messages[0].content)?.input?.substring(0, 100) || 'Untitled'
+        : 'Untitled' // 메시지에서 제목을 설정하거나 기본값 'Untitled'로 설정
+
+    // 메시지 배열 끝에 'end' 메시지를 추가하여 기록 종료를 알림
     const updatedMessages: AIMessage[] = [
       ...messages,
       {
-        id: generateId(),
-        role: 'assistant',
-        content: `end`,
-        type: 'end'
+        id: generateId(), // 고유 메시지 ID 생성
+        role: 'assistant', // 역할은 'assistant'
+        content: `end`, // 내용은 'end'
+        type: 'end' // 메시지 타입은 'end'
       }
     ]
 
+    // 채팅 객체 생성 및 저장
     const chat: Chat = {
       id: chatId,
       createdAt,
@@ -392,23 +351,26 @@ export const AI = createAI<AIState, UIState>({
       title,
       messages: updatedMessages
     }
-    await saveChat(chat)
+    await saveChat(chat) // 채팅 저장
   }
 })
 
+// AI 상태에서 UI 상태를 생성하는 함수
 export const getUIStateFromAIState = (aiState: Chat) => {
   const chatId = aiState.chatId
   const isSharePage = aiState.isSharePage
 
-    // Ensure messages is an array of plain objects
-    const messages = Array.isArray(aiState.messages) 
-    ? aiState.messages.map(msg => ({...msg})) 
-    : [];
+  // 메시지 배열을 복사하여 순수한 객체 배열로 변환
+  const messages = Array.isArray(aiState.messages) 
+    ? aiState.messages.map(msg => ({ ...msg })) 
+    : []
 
+  // 각 메시지에 대해 컴포넌트를 생성
   return messages
     .map((message, index) => {
       const { role, content, id, type, name } = message
 
+      // 특정 타입이나 공유 페이지에 표시되지 말아야 하는 메시지들을 필터링
       if (
         !type ||
         type === 'end' ||
@@ -417,6 +379,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
       )
         return null
 
+      // 사용자 메시지에 대한 컴포넌트 생성
       switch (role) {
         case 'user':
           switch (type) {
@@ -425,21 +388,23 @@ export const getUIStateFromAIState = (aiState: Chat) => {
               const json = JSON.parse(content)
               const value = type === 'input' ? json.input : json.related_query
               return {
-                id,
+                id, // 메시지 ID
                 component: (
                   <UserMessage
-                    message={value}
-                    chatId={chatId}
-                    showShare={index === 0 && !isSharePage}
+                    message={value} // 사용자 메시지 내용
+                    chatId={chatId} // 채팅 ID
+                    showShare={index === 0 && !isSharePage} // 공유 버튼 표시 여부
                   />
                 )
               }
             case 'inquiry':
               return {
                 id,
-                component: <CopilotDisplay content={content} />
+                component: <CopilotDisplay content={content} /> // Copilot 디스플레이 컴포넌트
               }
           }
+
+        // AI 어시스턴트 메시지에 대한 컴포넌트 생성
         case 'assistant':
           const answer = createStreamableValue()
           answer.done(content)
@@ -447,7 +412,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
             case 'answer':
               return {
                 id,
-                component: <AnswerSection result={answer.value} />
+                component: <AnswerSection result={answer.value} /> // 답변 섹션 컴포넌트
               }
             case 'related':
               const relatedQueries = createStreamableValue()
@@ -455,19 +420,21 @@ export const getUIStateFromAIState = (aiState: Chat) => {
               return {
                 id,
                 component: (
-                  <SearchRelated relatedQueries={relatedQueries.value} />
+                  <SearchRelated relatedQueries={relatedQueries.value} /> // 관련 검색어 컴포넌트
                 )
               }
             case 'followup':
               return {
                 id,
                 component: (
-                  <Section title="Follow-up" className="pb-1">
-                    <FollowupPanel />
+                  <Section title="" className="pb-1">
+                    <FollowupPanel /> // 후속 패널 컴포넌트
                   </Section>
                 )
               }
           }
+
+        // 도구(tool) 메시지에 대한 컴포넌트 생성
         case 'tool':
           try {
             const toolOutput = JSON.parse(content)
@@ -479,20 +446,20 @@ export const getUIStateFromAIState = (aiState: Chat) => {
               case 'search':
                 return {
                   id,
-                  component: <SearchSection result={searchResults.value} />,
-                  isCollapsed: isCollapsed.value
+                  component: <SearchSection result={searchResults.value} />, // 검색 섹션 컴포넌트
+                  isCollapsed: isCollapsed.value // 축소 상태
                 }
               case 'retrieve':
                 return {
                   id,
-                  component: <RetrieveSection data={toolOutput} />,
+                  component: <RetrieveSection data={toolOutput} />, // 데이터 검색 섹션
                   isCollapsed: isCollapsed.value
                 }
               case 'videoSearch':
                 return {
                   id,
                   component: (
-                    <VideoSearchSection result={searchResults.value} />
+                    <VideoSearchSection result={searchResults.value} /> // 비디오 검색 섹션
                   ),
                   isCollapsed: isCollapsed.value
                 }
@@ -500,15 +467,16 @@ export const getUIStateFromAIState = (aiState: Chat) => {
           } catch (error) {
             return {
               id,
-              component: null
+              component: null // 오류 발생 시 null 반환
             }
           }
+
         default:
           return {
             id,
-            component: null
+            component: null // 역할이 정의되지 않은 경우 null 반환
           }
       }
     })
-    .filter(message => message !== null) as UIState
+    .filter(message => message !== null) as UIState // 유효한 메시지들만 필터링하여 UI 상태로 반환
 }
